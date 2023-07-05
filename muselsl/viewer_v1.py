@@ -8,7 +8,7 @@ from threading import Thread
 from .constants import VIEW_BUFFER, VIEW_SUBSAMPLE, LSL_SCAN_TIMEOUT, LSL_EEG_CHUNK
 
 
-def view(window, scale, refresh, figure, backend, version=1, data_source="EEG"):
+def view(window, scale, refresh, figure, backend, version=1, data_source="EEG", filter=True):
     matplotlib.use(backend)
     sns.set(style="whitegrid")
 
@@ -22,7 +22,7 @@ def view(window, scale, refresh, figure, backend, version=1, data_source="EEG"):
     print("Start acquiring data.")
 
     fig, axes = matplotlib.pyplot.subplots(1, 1, figsize=figsize, sharex=True)
-    lslv = LSLViewer(streams[0], fig, axes, window, scale)
+    lslv = LSLViewer(streams[0], fig, axes, window, scale, filter=filter)
     fig.canvas.mpl_connect('close_event', lslv.stop)
 
     help_str = """
@@ -39,14 +39,14 @@ def view(window, scale, refresh, figure, backend, version=1, data_source="EEG"):
 
 
 class LSLViewer():
-    def __init__(self, stream, fig, axes, window, scale, dejitter=True):
+    def __init__(self, stream, fig, axes, window, scale, dejitter=True, filter=True):
         """Init"""
         self.stream = stream
         self.window = window
         self.scale = scale
         self.dejitter = dejitter
         self.inlet = StreamInlet(stream, max_chunklen=LSL_EEG_CHUNK)
-        self.filt = True
+        self.filt = filter
         self.subsample = VIEW_SUBSAMPLE
 
         info = self.inlet.info()
@@ -97,12 +97,13 @@ class LSLViewer():
 
         self.display_every = int(0.2 / (12 / self.sfreq))
 
-        self.bf = firwin(32, np.array([1, 40]) / (self.sfreq / 2.), width=0.05,
-                         pass_zero=False)
-        self.af = [1.0]
+        if filter:
+            self.bf = firwin(32, np.array([1, 40]) / (self.sfreq / 2.), width=0.05,
+                            pass_zero=False)
+            self.af = [1.0]
 
-        zi = lfilter_zi(self.bf, self.af)
-        self.filt_state = np.tile(zi, (self.n_chan, 1)).transpose()
+            zi = lfilter_zi(self.bf, self.af)
+            self.filt_state = np.tile(zi, (self.n_chan, 1)).transpose()
         self.data_f = np.zeros((self.n_samples, self.n_chan))
 
     def update_plot(self):
@@ -122,10 +123,13 @@ class LSLViewer():
                     self.times = self.times[-self.n_samples:]
                     self.data = np.vstack([self.data, samples])
                     self.data = self.data[-self.n_samples:]
-                    filt_samples, self.filt_state = lfilter(
-                        self.bf, self.af,
-                        samples,
-                        axis=0, zi=self.filt_state)
+                    if self.filt:
+                        filt_samples, self.filt_state = lfilter(
+                            self.bf, self.af,
+                            samples,
+                            axis=0, zi=self.filt_state)
+                    else:
+                        filt_samples = samples
                     self.data_f = np.vstack([self.data_f, filt_samples])
                     self.data_f = self.data_f[-self.n_samples:]
                     k += 1

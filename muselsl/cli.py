@@ -231,6 +231,13 @@ class CLI:
             default="EEG",
             help="Stream to visualize.")
         parser.add_argument(
+            "-fi",
+            "--filter",
+            dest="filter",
+            type=bool,
+            default=True,
+            help="Filter the data. Must be False for other streams than EEG for now.")
+        parser.add_argument(
             "-v",
             "--version",
             dest="version",
