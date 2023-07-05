@@ -256,4 +256,4 @@ class CLI:
         args = parser.parse_args(sys.argv[2:])
         from . import view
         view(args.window, args.scale, args.refresh, args.figure, args.version,
-             args.backend, args.data_source)
+             args.backend, args.data_source, args.filter)
