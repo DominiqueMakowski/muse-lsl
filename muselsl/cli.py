@@ -224,6 +224,13 @@ class CLI:
             default="15x6",
             help="Window size.")
         parser.add_argument(
+            "-st",
+            "--stream",
+            dest="data_source",
+            type=str,
+            default="EEG",
+            help="Stream to visualize.")
+        parser.add_argument(
             "-v",
             "--version",
             dest="version",
@@ -242,4 +249,4 @@ class CLI:
         args = parser.parse_args(sys.argv[2:])
         from . import view
         view(args.window, args.scale, args.refresh, args.figure, args.version,
-             args.backend)
+             args.backend, args.data_source)

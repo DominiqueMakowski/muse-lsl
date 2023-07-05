@@ -8,17 +8,17 @@ from threading import Thread
 from .constants import VIEW_BUFFER, VIEW_SUBSAMPLE, LSL_SCAN_TIMEOUT, LSL_EEG_CHUNK
 
 
-def view(window, scale, refresh, figure, backend, version=1):
+def view(window, scale, refresh, figure, backend, version=1, data_source="EEG"):
     matplotlib.use(backend)
     sns.set(style="whitegrid")
 
     figsize = np.int16(figure.split('x'))
 
-    print("Looking for an EEG stream...")
-    streams = resolve_byprop('type', 'EEG', timeout=LSL_SCAN_TIMEOUT)
+    print("Looking for an " + data_source + " stream...")
+    streams = resolve_byprop('type', data_source, timeout=LSL_SCAN_TIMEOUT)
 
     if len(streams) == 0:
-        raise(RuntimeError("Can't find EEG stream."))
+        raise(RuntimeError("Can't find " + data_source + " stream."))
     print("Start acquiring data.")
 
     fig, axes = matplotlib.pyplot.subplots(1, 1, figsize=figsize, sharex=True)
