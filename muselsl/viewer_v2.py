@@ -7,16 +7,16 @@
 Multiple real-time digital signals with GLSL-based clipping.
 """
 
-from vispy import gloo, app, visuals
+import math
 
 import numpy as np
-import math
-from seaborn import color_palette
+from mne.filter import create_filter
 from pylsl import StreamInlet, resolve_byprop
 from scipy.signal import lfilter, lfilter_zi
-from mne.filter import create_filter
-from .constants import LSL_SCAN_TIMEOUT, LSL_EEG_CHUNK
+from seaborn import color_palette
+from vispy import app, gloo, visuals
 
+from .constants import LSL_EEG_CHUNK, LSL_SCAN_TIMEOUT
 
 VERT_SHADER = """
 #version 120
@@ -76,20 +76,20 @@ void main() {
 """
 
 
-def view():
-    print("Looking for an EEG stream...")
-    streams = resolve_byprop('type', 'EEG', timeout=LSL_SCAN_TIMEOUT)
+def view(data_source="EEG"):
+    print("Looking for an " + data_source + " stream...")
+    streams = resolve_byprop('type', data_source, timeout=LSL_SCAN_TIMEOUT)
 
     if len(streams) == 0:
         raise(RuntimeError("Can't find EEG stream."))
     print("Start acquiring data.")
 
     inlet = StreamInlet(streams[0], max_chunklen=LSL_EEG_CHUNK)
-    Canvas(inlet)
+    Canvas(inlet, data_source=data_source)
     app.run()
 
 
-class Canvas(app.Canvas):
+class Canvas(app.Canvas, data_source="EEG"):
     def __init__(self, lsl_inlet, scale=500, filt=True):
         app.Canvas.__init__(self, title='EEG - Use your wheel to zoom!',
                             keys='interactive')
